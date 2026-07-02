@@ -1,10 +1,10 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from streamlit_gsheets import GSheetsConnection  # <--- DIESE ZEILE HINZUFÜGEN
+from streamlit_gsheets import GSheetsConnection
 
-# Verbindung zu Google Sheets registrieren
-conn = st.connection("gsheets", type=GSheetsConnection) # <--- 'type' geändert
+# Verbindung explizit initialisieren
+conn = st.connection("gsheets", type=GSheetsConnection)
 
 st.title("💸 Meine Wetten-Übersicht")
 
@@ -26,15 +26,16 @@ if submit:
         "Bilanz": round(gewinn_verlust, 2)
     }])
     
-    # HIER DIE ÄNDERUNG:
-    # Statt conn.update() nutzen wir add_rows()
-    conn.add_rows(neue_wette)
-    
+    # Hier der direkte Weg: Wir laden alles, fügen hinzu und überschreiben
+    df = conn.read()
+    updated_df = pd.concat([df, neue_wette], ignore_index=True)
+    conn.update(data=updated_df)
     st.success("Wette in Google Sheets gespeichert!")
 
 # --- ANZEIGE ---
 st.subheader("Historie aus Google Sheets")
 df = conn.read()
 st.dataframe(df)
+
 if not df.empty:
     st.metric("Gesamtbilanz", f"{df['Bilanz'].sum():.2f} €")
