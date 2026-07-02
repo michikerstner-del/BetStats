@@ -1,9 +1,10 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+from streamlit_gsheets import GSheetsConnection  # <--- DIESE ZEILE HINZUFÜGEN
 
-# Verbindung zu Google Sheets
-conn = st.connection("gsheets", type="gsheets")
+# Verbindung zu Google Sheets registrieren
+conn = st.connection("gsheets", type=GSheetsConnection) # <--- 'type' geändert
 
 st.title("💸 Meine Wetten-Übersicht")
 
