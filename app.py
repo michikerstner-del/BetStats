@@ -1,17 +1,9 @@
 import streamlit as st
 import pandas as pd
-import os
-from datetime import datetime, timedelta
+from datetime import datetime
 
-# Dateiname für die dauerhafte Speicherung
-DATA_FILE = "wetten_daten.csv"
-
-# Daten laden oder leeren DataFrame erstellen
-if os.path.exists(DATA_FILE):
-    df_data = pd.read_csv(DATA_FILE)
-    df_data['Datum'] = pd.to_datetime(df_data['Datum'])
-else:
-    df_data = pd.DataFrame(columns=["Datum", "Einsatz", "Quote", "Status", "Bilanz"])
+# Verbindung zu Google Sheets
+conn = st.connection("gsheets", type="gsheets")
 
 st.title("💸 Meine Wetten-Übersicht")
 
@@ -25,35 +17,23 @@ with st.expander("Neue Wette hinzufügen"):
 
 if submit:
     gewinn_verlust = (einsatz * quote) - einsatz if status == "Gewonnen" else -einsatz
-    neue_wette = pd.DataFrame({
-        "Datum": [datetime.now()],
-        "Einsatz": [einsatz],
-        "Quote": [quote],
-        "Status": [status],
-        "Bilanz": [round(gewinn_verlust, 2)]
-    })
+    neue_wette = pd.DataFrame([{
+        "Datum": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "Einsatz": einsatz,
+        "Quote": quote,
+        "Status": status,
+        "Bilanz": round(gewinn_verlust, 2)
+    }])
     
-    # Daten zusammenführen und speichern
-    df_data = pd.concat([df_data, neue_wette], ignore_index=True)
-    df_data.to_csv(DATA_FILE, index=False)
-    st.success("Wette dauerhaft gespeichert!")
+    # In Google Sheet schreiben
+    existing_data = conn.read()
+    updated_df = pd.concat([existing_data, neue_wette], ignore_index=True)
+    conn.update(data=updated_df)
+    st.success("Wette in Google Sheets gespeichert!")
 
-# --- FILTER ---
-st.sidebar.header("Filter & Ansichten")
-ansicht = st.sidebar.selectbox("Zeitraum wählen", ["Gesamt", "Heute", "Letzte 7 Tage", "Aktueller Monat"])
-
-df_filtered = df_data.copy()
-if not df_filtered.empty:
-    heute = datetime.now()
-    if ansicht == "Heute":
-        df_filtered = df_filtered[df_filtered['Datum'].dt.date == heute.date()]
-    elif ansicht == "Letzte 7 Tage":
-        df_filtered = df_filtered[df_filtered['Datum'] >= heute - timedelta(days=7)]
-    elif ansicht == "Aktueller Monat":
-        df_filtered = df_filtered[(df_filtered['Datum'].dt.month == heute.month) & (df_filtered['Datum'].dt.year == heute.year)]
-
-    st.subheader(f"Ansicht: {ansicht}")
-    st.dataframe(df_filtered)
-    st.metric("Gesamtbilanz", f"{df_filtered['Bilanz'].sum():.2f} €")
-else:
-    st.write("Noch keine Daten vorhanden.")
+# --- ANZEIGE ---
+st.subheader("Historie aus Google Sheets")
+df = conn.read()
+st.dataframe(df)
+if not df.empty:
+    st.metric("Gesamtbilanz", f"{df['Bilanz'].sum():.2f} €")
