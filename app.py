@@ -26,10 +26,10 @@ if submit:
         "Bilanz": round(gewinn_verlust, 2)
     }])
     
-    # In Google Sheet schreiben
-    existing_data = conn.read()
-    updated_df = pd.concat([existing_data, neue_wette], ignore_index=True)
-    conn.update(data=updated_df)
+    # HIER DIE ÄNDERUNG:
+    # Statt conn.update() nutzen wir add_rows()
+    conn.add_rows(neue_wette)
+    
     st.success("Wette in Google Sheets gespeichert!")
 
 # --- ANZEIGE ---
