@@ -10,7 +10,7 @@ creds = Credentials.from_service_account_file("google-credentials.json", scopes=
 client = gspread.authorize(creds)
 
 # Sheet öffnen (ID aus URL)
-SHEET_ID = "HIER_DEINE_SHEET_ID_EINFÜGEN"
+SHEET_ID = "https://docs.google.com/spreadsheets/d/1-xtMp2azK7EZPfKuCj2Ag780WHVHQ6UKcBH00P2biGQ/edit?usp=drivesdk"
 sh = client.open_by_key(SHEET_ID)
 worksheet = sh.sheet1
 
